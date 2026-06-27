@@ -1,19 +1,19 @@
 /**
  * products.js — fetch products from Google Sheets CSV and render cards
- * CSV columns: name, category, price, image_url, available
+ * CSV columns: name, category, price, image_url, image_url2, image_url3, available
  * Only rows where available === "yes" are shown.
  */
 
 const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTGTx5O-3s4k4UkY68v1KDvVknkKnf0wLlUJmVUdzUoSDdW0zh-64jJ_t2ndOoV-23ilPJDarWJyaU0/pub?gid=0&single=true&output=csv";
 const WA_NUMBER = "213550249981";
 
-const filtersEl  = document.getElementById("products-filters");
-const gridEl     = document.getElementById("products-grid");
-const loadingEl  = document.getElementById("products-loading");
-const errorEl    = document.getElementById("products-error");
+const filtersEl = document.getElementById("products-filters");
+const gridEl    = document.getElementById("products-grid");
+const loadingEl = document.getElementById("products-loading");
+const errorEl   = document.getElementById("products-error");
 
+/* ── CSV parser (RFC-4180, handles quoted multi-line fields) ── */
 function parseCSV(text) {
-  // Full RFC-4180 parser: handles quoted fields with embedded newlines/commas
   const rows = [];
   let cur = "", inQ = false, fields = [], i = 0;
   const push = () => { fields.push(cur); cur = ""; };
@@ -41,61 +41,27 @@ function parseCSV(text) {
     .map(r => Object.fromEntries(headers.map((h, j) => [h, (r[j] ?? "").trim()])));
 }
 
+/* ── Extract direct image URL from BBCode or plain URL ── */
+function extractUrl(raw) {
+  if (!raw) return "";
+  const m = raw.match(/\[img\](https?:\/\/[^\[]+)\[\/img\]/i);
+  return (m ? m[1] : raw).trim();
+}
+
+/* ── Collect valid image URLs from a product row ── */
+function getImages(p) {
+  return ["image_url", "image_url2", "image_url3"]
+    .map(k => extractUrl(p[k]))
+    .filter(u => u !== "");
+}
+
+/* ── WhatsApp link ── */
 function buildWhatsApp(name) {
   const msg = encodeURIComponent(`السلام عليكم، نحب نطلب: ${name}`);
   return `https://wa.me/${WA_NUMBER}?text=${msg}`;
 }
 
-function renderCard(p) {
-  // Extract direct URL from BBCode like [img]url[/img] or [url=...]...[/url]
-  let imageUrl = p.image_url || "";
-  const imgMatch = imageUrl.match(/\[img\](https?:\/\/[^\[]+)\[\/img\]/i);
-  if (imgMatch) imageUrl = imgMatch[1];
-  const hasImage = imageUrl !== "";
-  const priceNum = p.price ? parseFloat(p.price.replace(/[^\d.]/g, "")) : NaN;
-  const priceText = !isNaN(priceNum)
-    ? `<p class="product-card__price">${priceNum.toLocaleString("fr-DZ")} دج</p>`
-    : `<p class="product-card__price product-card__price--quote">حسب التشخيص</p>`;
-
-  const card = document.createElement("div");
-  card.className = "product-card aos-visible";
-  card.dataset.category = p.category || "";
-
-  // Media section: image with icon fallback, or plain icon
-  const mediaDiv = document.createElement("div");
-  if (hasImage) {
-    mediaDiv.className = "product-card__img";
-    const img = document.createElement("img");
-    img.src = imageUrl;
-    img.alt = p.name;
-    img.loading = "lazy";
-    img.addEventListener("error", () => {
-      mediaDiv.className = "product-card__icon";
-      mediaDiv.setAttribute("aria-hidden", "true");
-      mediaDiv.innerHTML = categoryIcon(p.category);
-    });
-    mediaDiv.appendChild(img);
-  } else {
-    mediaDiv.className = "product-card__icon";
-    mediaDiv.setAttribute("aria-hidden", "true");
-    mediaDiv.innerHTML = categoryIcon(p.category);
-  }
-
-  card.innerHTML = `
-    <span class="product-card__badge product-card__badge--${p.category}">${p.category}</span>
-    <div class="product-card__body">
-      <h3 class="product-card__name">${p.name}</h3>
-      ${priceText}
-    </div>
-    <a href="${buildWhatsApp(p.name)}" class="product-card__order" target="_blank" rel="noopener">
-      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true" style="vertical-align:-3px;margin-inline-end:6px"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-      اطلب الآن
-    </a>`;
-  // Insert media before the body
-  card.insertBefore(mediaDiv, card.querySelector('.product-card__body'));
-  return card;
-}
-
+/* ── Category fallback icon ── */
 function categoryIcon(cat) {
   const icons = {
     computers:   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>`,
@@ -107,16 +73,141 @@ function categoryIcon(cat) {
   return icons[cat] || icons.accessories;
 }
 
-function buildFilters(categories, products) {
-  const lang = document.documentElement.lang || "ar";
-  filtersEl.innerHTML = "";
+/* ── Build image carousel or single image or icon ── */
+function buildMedia(p, images) {
+  if (images.length === 0) {
+    const div = document.createElement("div");
+    div.className = "product-card__icon";
+    div.setAttribute("aria-hidden", "true");
+    div.innerHTML = categoryIcon(p.category);
+    return div;
+  }
 
+  if (images.length === 1) {
+    const wrap = document.createElement("div");
+    wrap.className = "product-card__img";
+    const img = document.createElement("img");
+    img.src = images[0];
+    img.alt = p.name;
+    img.loading = "lazy";
+    img.addEventListener("error", () => {
+      wrap.className = "product-card__icon";
+      wrap.setAttribute("aria-hidden", "true");
+      wrap.innerHTML = categoryIcon(p.category);
+    });
+    wrap.appendChild(img);
+    return wrap;
+  }
+
+  // Multiple images → carousel
+  const carousel = document.createElement("div");
+  carousel.className = "product-card__carousel";
+
+  const track = document.createElement("div");
+  track.className = "carousel__track";
+
+  let current = 0;
+  const validImages = [];
+
+  images.forEach((url, idx) => {
+    const slide = document.createElement("div");
+    slide.className = "carousel__slide" + (idx === 0 ? " carousel__slide--active" : "");
+    const img = document.createElement("img");
+    img.src = url;
+    img.alt = `${p.name} ${idx + 1}`;
+    img.loading = idx === 0 ? "eager" : "lazy";
+    img.addEventListener("error", () => slide.remove());
+    slide.appendChild(img);
+    track.appendChild(slide);
+    validImages.push(slide);
+  });
+
+  carousel.appendChild(track);
+
+  // Prev / Next arrows
+  const prev = document.createElement("button");
+  prev.className = "carousel__btn carousel__btn--prev";
+  prev.setAttribute("aria-label", "السابق");
+  prev.innerHTML = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>`;
+
+  const next = document.createElement("button");
+  next.className = "carousel__btn carousel__btn--next";
+  next.setAttribute("aria-label", "التالي");
+  next.innerHTML = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>`;
+
+  // Dot indicators
+  const dots = document.createElement("div");
+  dots.className = "carousel__dots";
+  images.forEach((_, idx) => {
+    const dot = document.createElement("span");
+    dot.className = "carousel__dot" + (idx === 0 ? " carousel__dot--active" : "");
+    dots.appendChild(dot);
+  });
+
+  function goTo(n) {
+    const slides = track.querySelectorAll(".carousel__slide");
+    const dotEls = dots.querySelectorAll(".carousel__dot");
+    if (!slides.length) return;
+    current = (n + slides.length) % slides.length;
+    slides.forEach((s, i) => s.classList.toggle("carousel__slide--active", i === current));
+    dotEls.forEach((d, i) => d.classList.toggle("carousel__dot--active", i === current));
+  }
+
+  prev.addEventListener("click", e => { e.stopPropagation(); goTo(current - 1); });
+  next.addEventListener("click", e => { e.stopPropagation(); goTo(current + 1); });
+
+  carousel.appendChild(prev);
+  carousel.appendChild(next);
+  carousel.appendChild(dots);
+
+  // Touch/swipe support
+  let touchStartX = 0;
+  carousel.addEventListener("touchstart", e => { touchStartX = e.touches[0].clientX; }, { passive: true });
+  carousel.addEventListener("touchend", e => {
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    // RTL: swipe right = next, swipe left = prev (reverse of LTR)
+    if (Math.abs(dx) > 40) goTo(dx < 0 ? current + 1 : current - 1);
+  }, { passive: true });
+
+  return carousel;
+}
+
+/* ── Render one product card ── */
+function renderCard(p) {
+  const images = getImages(p);
+  const priceNum = p.price ? parseFloat(p.price.replace(/[^\d.]/g, "")) : NaN;
+  const priceText = !isNaN(priceNum)
+    ? `<p class="product-card__price">${priceNum.toLocaleString("fr-DZ")} دج</p>`
+    : `<p class="product-card__price product-card__price--quote">حسب التشخيص</p>`;
+
+  const card = document.createElement("div");
+  card.className = "product-card aos-visible";
+  card.dataset.category = p.category || "";
+
+  card.innerHTML = `
+    <span class="product-card__badge product-card__badge--${p.category}">${p.category}</span>
+    <div class="product-card__body">
+      <h3 class="product-card__name">${p.name}</h3>
+      ${priceText}
+    </div>
+    <a href="${buildWhatsApp(p.name)}" class="product-card__order" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true" style="vertical-align:-3px;margin-inline-end:6px"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+      اطلب الآن
+    </a>`;
+
+  card.insertBefore(buildMedia(p, images), card.querySelector(".product-card__body"));
+  return card;
+}
+
+/* ── Build category filter tabs ── */
+function buildFilters(categories) {
+  filtersEl.innerHTML = "";
   const allBtn = document.createElement("button");
   allBtn.className = "filter-btn filter-btn--active";
   allBtn.dataset.category = "all";
-  allBtn.textContent = lang === "fr" ? "Tout" : "الكل";
   allBtn.setAttribute("data-ar", "الكل");
   allBtn.setAttribute("data-fr", "Tout");
+  allBtn.textContent = document.documentElement.lang === "fr" ? "Tout" : "الكل";
   filtersEl.appendChild(allBtn);
 
   categories.forEach(cat => {
@@ -132,37 +223,24 @@ function buildFilters(categories, products) {
     if (!btn) return;
     filtersEl.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("filter-btn--active"));
     btn.classList.add("filter-btn--active");
-    const selected = btn.dataset.category;
+    const sel = btn.dataset.category;
     gridEl.querySelectorAll(".product-card").forEach(card => {
-      card.classList.toggle("hidden", selected !== "all" && card.dataset.category !== selected);
+      card.classList.toggle("hidden", sel !== "all" && card.dataset.category !== sel);
     });
   });
 }
 
+/* ── Main loader ── */
 async function loadProducts() {
-  if (CSV_URL === "YOUR_CSV_URL") {
-    // No real URL yet — show placeholder cards
-    loadingEl.hidden = true;
-    gridEl.hidden = false;
-    gridEl.innerHTML = `<p style="color:var(--text-muted);grid-column:1/-1;text-align:center">أضف رابط Google Sheets CSV في static/js/products.js</p>`;
-    return;
-  }
-
   try {
     const res = await fetch(CSV_URL);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const text = await res.text();
-    const rows = parseCSV(text).filter(r => r.available?.toLowerCase() === "yes");
-
+    const rows = parseCSV(await res.text()).filter(r => r.available?.toLowerCase() === "yes");
     const categories = [...new Set(rows.map(r => r.category).filter(Boolean))];
-
-    buildFilters(categories, rows);
-
+    buildFilters(categories);
     rows.forEach(p => gridEl.appendChild(renderCard(p)));
-
     loadingEl.hidden = true;
     gridEl.hidden = false;
-
   } catch (err) {
     console.error("products.js:", err);
     loadingEl.hidden = true;

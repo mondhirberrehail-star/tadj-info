@@ -488,6 +488,57 @@ button, input, select, textarea { font-family: inherit; }
 }
 .product-card.hidden { display: none; }
 
+/* ── Image carousel ────────────────────────────────────────── */
+.product-card__carousel {
+  position: relative;
+  height: 160px;
+  overflow: hidden;
+  background: var(--bg-card2);
+}
+.carousel__track { width: 100%; height: 100%; }
+.carousel__slide {
+  display: none;
+  width: 100%; height: 100%;
+}
+.carousel__slide--active { display: block; }
+.carousel__slide img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+.product-card:hover .carousel__slide--active img { transform: scale(1.04); }
+
+.carousel__btn {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  background: rgba(13,17,23,.65);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  width: 30px; height: 30px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background var(--transition);
+  z-index: 2;
+}
+.carousel__btn:hover { background: rgba(30,159,224,.35); }
+.carousel__btn--prev { right: 8px; }
+.carousel__btn--next { left: 8px; }
+
+.carousel__dots {
+  position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 5px; z-index: 2;
+}
+.carousel__dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.35);
+  transition: background var(--transition), transform var(--transition);
+}
+.carousel__dot--active {
+  background: var(--accent);
+  transform: scale(1.3);
+}
+
 /* Loading spinner */
 .products__loading {
   display: flex; flex-direction: column;
