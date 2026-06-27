@@ -35,7 +35,11 @@ function buildWhatsApp(name) {
 }
 
 function renderCard(p) {
-  const hasImage = p.image_url && p.image_url !== "";
+  // Extract direct URL from BBCode like [img]url[/img] or [url=...]...[/url]
+  let imageUrl = p.image_url || "";
+  const imgMatch = imageUrl.match(/\[img\](https?:\/\/[^\[]+)\[\/img\]/i);
+  if (imgMatch) imageUrl = imgMatch[1];
+  const hasImage = imageUrl !== "";
   const priceNum = p.price ? parseFloat(p.price.replace(/[^\d.]/g, "")) : NaN;
   const priceText = !isNaN(priceNum)
     ? `<p class="product-card__price">${priceNum.toLocaleString("fr-DZ")} دج</p>`
@@ -50,7 +54,7 @@ function renderCard(p) {
   if (hasImage) {
     mediaDiv.className = "product-card__img";
     const img = document.createElement("img");
-    img.src = p.image_url;
+    img.src = imageUrl;
     img.alt = p.name;
     img.loading = "lazy";
     img.addEventListener("error", () => {
