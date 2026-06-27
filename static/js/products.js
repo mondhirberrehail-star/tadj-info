@@ -13,20 +13,32 @@ const loadingEl  = document.getElementById("products-loading");
 const errorEl    = document.getElementById("products-error");
 
 function parseCSV(text) {
-  const lines = text.trim().split(/\r?\n/);
-  const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
-  return lines.slice(1).map(line => {
-    // Handle quoted fields with commas inside
-    const fields = [];
-    let cur = "", inQ = false;
-    for (const ch of line) {
-      if (ch === '"') { inQ = !inQ; }
-      else if (ch === "," && !inQ) { fields.push(cur.trim()); cur = ""; }
-      else cur += ch;
+  // Full RFC-4180 parser: handles quoted fields with embedded newlines/commas
+  const rows = [];
+  let cur = "", inQ = false, fields = [], i = 0;
+  const push = () => { fields.push(cur); cur = ""; };
+  while (i < text.length) {
+    const ch = text[i];
+    if (inQ) {
+      if (ch === '"' && text[i + 1] === '"') { cur += '"'; i += 2; continue; }
+      if (ch === '"') { inQ = false; i++; continue; }
+      cur += ch;
+    } else {
+      if (ch === '"') { inQ = true; i++; continue; }
+      if (ch === ',') { push(); i++; continue; }
+      if (ch === '\n' || (ch === '\r' && text[i + 1] === '\n')) {
+        push(); rows.push(fields); fields = [];
+        i += ch === '\r' ? 2 : 1; continue;
+      }
+      cur += ch;
     }
-    fields.push(cur.trim());
-    return Object.fromEntries(headers.map((h, i) => [h, fields[i] ?? ""]));
-  });
+    i++;
+  }
+  push(); if (fields.length) rows.push(fields);
+  const headers = rows[0].map(h => h.trim().toLowerCase());
+  return rows.slice(1)
+    .filter(r => r.some(f => f.trim()))
+    .map(r => Object.fromEntries(headers.map((h, j) => [h, (r[j] ?? "").trim()])));
 }
 
 function buildWhatsApp(name) {
