@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TADJ-INFO — لوحة الإدارة</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/style.css">
+  <style>
+    :root { --sidebar-w: 240px; }
+    body { background: var(--bg-dark); min-height: 100vh; }
+
+    /* ── Layout ── */
+    .admin-layout { display: flex; min-height: 100vh; }
+    .admin-sidebar {
+      width: var(--sidebar-w); background: var(--bg-card); border-left: 1px solid var(--border);
+      display: flex; flex-direction: column; padding: 1.5rem 1rem; gap: 0.5rem;
+      position: fixed; top: 0; right: 0; bottom: 0; z-index: 100;
+    }
+    .admin-main { margin-right: var(--sidebar-w); padding: 2rem; flex: 1; max-width: calc(100vw - var(--sidebar-w)); }
+
+    /* ── Sidebar ── */
+    .sidebar-logo { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0 1rem; border-bottom: 1px solid var(--border); margin-bottom: 0.5rem; }
+    .sidebar-nav a {
+      display: flex; align-items: center; gap: 0.6rem; padding: 0.65rem 0.75rem;
+      border-radius: 8px; color: var(--text-muted); text-decoration: none; font-size: 0.9rem;
+      transition: background 0.15s, color 0.15s;
+    }
+    .sidebar-nav a:hover, .sidebar-nav a.active { background: rgba(30,159,224,.12); color: var(--accent); }
+    .sidebar-nav svg { width: 18px; height: 18px; flex-shrink: 0; }
+    .sidebar-footer { margin-top: auto; }
+    .sidebar-footer a { color: var(--text-muted); font-size: 0.85rem; text-decoration: none; display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; }
+    .sidebar-footer a:hover { color: #ef4444; }
+
+    /* ── Page header ── */
+    .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
+    .page-header h1 { font-size: 1.5rem; font-weight: 700; color: var(--text-primary); margin: 0; }
+
+    /* ── Stats row ── */
+    .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+    .stat-card { background: var(--bg-card); border-radius: 12px; padding: 1.25rem; border: 1px solid var(--border); }
+    .stat-card__num { font-size: 2rem; font-weight: 900; color: var(--accent); line-height: 1; }
+    .stat-card__label { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem; }
+
+    /* ── Filter bar ── */
+    .filter-bar { display: flex; gap: 0.5rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
+    .filter-bar a {
+      padding: 0.4rem 1rem; border-radius: 20px; border: 1px solid var(--border);
+      color: var(--text-muted); font-size: 0.85rem; text-decoration: none; transition: all 0.15s;
+    }
+    .filter-bar a:hover { border-color: var(--accent); color: var(--accent); }
+    .filter-bar a.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+    /* ── Table ── */
+    .table-wrap { background: var(--bg-card); border-radius: 14px; border: 1px solid var(--border); overflow: hidden; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+    thead th { background: rgba(11,77,162,.08); padding: 0.85rem 1rem; text-align: right; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border); white-space: nowrap; }
+    tbody tr { border-bottom: 1px solid var(--border); transition: background 0.12s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: rgba(30,159,224,.04); }
+    tbody td { padding: 0.85rem 1rem; color: var(--text-primary); vertical-align: middle; }
+    .td-name { font-weight: 600; }
+    .td-phone a { color: var(--accent); text-decoration: none; }
+    .td-phone a:hover { text-decoration: underline; }
+    .td-date { color: var(--text-muted); font-size: 0.8rem; white-space: nowrap; }
+    .td-note { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-muted); font-size: 0.82rem; }
+    .td-id { color: var(--text-muted); font-size: 0.8rem; }
+
+    /* ── Status badges ── */
+    .badge { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.3rem 0.7rem; border-radius: 20px; font-size: 0.78rem; font-weight: 600; }
+    .badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+    .badge--new    { background: rgba(30,159,224,.15); color: #1E9FE0; }
+    .badge--new::before    { background: #1E9FE0; }
+    .badge--proc   { background: rgba(245,158,11,.15); color: #f59e0b; }
+    .badge--proc::before   { background: #f59e0b; }
+    .badge--done   { background: rgba(34,197,94,.15); color: #22c55e; }
+    .badge--done::before   { background: #22c55e; }
+
+    /* ── Status form ── */
+    .status-form { display: flex; gap: 0.4rem; align-items: center; }
+    .status-select {
+      background: var(--bg-dark); border: 1px solid var(--border); color: var(--text-primary);
+      border-radius: 8px; padding: 0.3rem 0.5rem; font-size: 0.8rem; font-family: inherit; cursor: pointer;
+    }
+    .status-select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+    .btn-save { background: var(--primary); color: #fff; border: none; border-radius: 8px; padding: 0.3rem 0.7rem; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: opacity .15s; }
+    .btn-save:hover { opacity: 0.85; }
+
+    /* ── Flash messages ── */
+    .flash { padding: 0.75rem 1rem; border-radius: 10px; margin-bottom: 1rem; font-size: 0.9rem; }
+    .flash--success { background: rgba(34,197,94,.12); color: #22c55e; border: 1px solid rgba(34,197,94,.3); }
+    .flash--error   { background: rgba(239,68,68,.12);  color: #ef4444; border: 1px solid rgba(239,68,68,.3); }
+
+    /* ── Type badge ── */
+    .type-badge { font-size: 0.78rem; padding: 0.2rem 0.5rem; border-radius: 6px; }
+    .type-badge--buy  { background: rgba(11,77,162,.15); color: #6ba4e8; }
+    .type-badge--fix  { background: rgba(245,158,11,.12); color: #f59e0b; }
+
+    /* ── Empty ── */
+    .empty-state { text-align: center; padding: 3rem 1rem; color: var(--text-muted); }
+    .empty-state svg { width: 48px; height: 48px; margin-bottom: 1rem; opacity: .4; }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .admin-sidebar { display: none; }
+      .admin-main { margin-right: 0; padding: 1rem; max-width: 100vw; }
+      .mobile-header { display: flex !important; }
+      table { font-size: 0.78rem; }
+      thead th, tbody td { padding: 0.6rem 0.5rem; }
+    }
+    .mobile-header {
+      display: none; background: var(--bg-card); border-bottom: 1px solid var(--border);
+      padding: 0.75rem 1rem; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 50;
+    }
+  </style>
+</head>
+<body>
+
+<div class="admin-layout">
+  <!-- ── Sidebar ── -->
+  <aside class="admin-sidebar">
+    <div class="sidebar-logo">
+      <div class="logo__monogram" style="width:36px;height:36px;font-size:1rem"><span class="logo__ti">Ti</span></div>
+      <span class="logo__wordmark" style="font-size:1rem">TADJ<span class="logo__dash">-</span>INFO</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a href="/admin" class="active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+        الطلبات
+      </a>
+      <a href="/" target="_blank">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
+        الموقع
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <a href="/admin/logout">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+        خروج
+      </a>
+    </div>
+  </aside>
+
+  <!-- ── Main ── -->
+  <main class="admin-main">
+
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+      <div class="flash flash--{{ category }}">{{ message }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    <div class="page-header">
+      <h1>الطلبات الواردة</h1>
+      <a href="/" target="_blank" class="btn btn--outline" style="font-size:.85rem;padding:.4rem .9rem">← الموقع</a>
+    </div>
+
+    <!-- Stats -->
+    {% set total = orders|length %}
+    {% set new_c  = orders|selectattr("status","equalto","جديد")|list|length %}
+    {% set proc_c = orders|selectattr("status","equalto","قيد المعالجة")|list|length %}
+    {% set done_c = orders|selectattr("status","equalto","مكتمل")|list|length %}
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-card__num">{{ total }}</div>
+        <div class="stat-card__label">إجمالي الطلبات</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card__num" style="color:#1E9FE0">{{ new_c }}</div>
+        <div class="stat-card__label">جديدة</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card__num" style="color:#f59e0b">{{ proc_c }}</div>
+        <div class="stat-card__label">قيد المعالجة</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card__num" style="color:#22c55e">{{ done_c }}</div>
+        <div class="stat-card__label">مكتملة</div>
+      </div>
+    </div>
+
+    <!-- Filter bar -->
+    <div class="filter-bar">
+      <a href="/admin" class="{{ 'active' if not status_filter }}">الكل ({{ total }})</a>
+      <a href="/admin?status=جديد"          class="{{ 'active' if status_filter == 'جديد' }}">جديد ({{ new_c }})</a>
+      <a href="/admin?status=قيد المعالجة" class="{{ 'active' if status_filter == 'قيد المعالجة' }}">قيد المعالجة ({{ proc_c }})</a>
+      <a href="/admin?status=مكتمل"         class="{{ 'active' if status_filter == 'مكتمل' }}">مكتمل ({{ done_c }})</a>
+    </div>
+
+    <!-- Orders table -->
+    <div class="table-wrap">
+      {% if orders %}
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>الاسم واللقب</th>
+              <th>الهاتف</th>
+              <th>المنتج / الخدمة</th>
+              <th>النوع</th>
+              <th>الملاحظة</th>
+              <th>الحالة</th>
+              <th>التاريخ</th>
+              <th>تحديث</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for o in orders %}
+            <tr>
+              <td class="td-id">{{ o.id }}</td>
+              <td class="td-name">{{ o.customer_name }}</td>
+              <td class="td-phone"><a href="tel:{{ o.phone }}">{{ o.phone }}</a></td>
+              <td>{{ o.product }}</td>
+              <td>
+                <span class="type-badge {{ 'type-badge--buy' if o.order_type == 'بيع' else 'type-badge--fix' }}">
+                  {{ o.order_type }}
+                </span>
+              </td>
+              <td class="td-note" title="{{ o.note }}">{{ o.note or '—' }}</td>
+              <td>
+                {% if o.status == 'جديد' %}
+                  <span class="badge badge--new">{{ o.status }}</span>
+                {% elif o.status == 'قيد المعالجة' %}
+                  <span class="badge badge--proc">{{ o.status }}</span>
+                {% else %}
+                  <span class="badge badge--done">{{ o.status }}</span>
+                {% endif %}
+              </td>
+              <td class="td-date">{{ o.created_at }}</td>
+              <td>
+                <form class="status-form" method="POST" action="/admin/update-status">
+                  <input type="hidden" name="order_id" value="{{ o.id }}">
+                  <select name="status" class="status-select" aria-label="تغيير الحالة">
+                    <option value="جديد"          {{ 'selected' if o.status == 'جديد' }}>جديد</option>
+                    <option value="قيد المعالجة" {{ 'selected' if o.status == 'قيد المعالجة' }}>قيد المعالجة</option>
+                    <option value="مكتمل"         {{ 'selected' if o.status == 'مكتمل' }}>مكتمل</option>
+                  </select>
+                  <button type="submit" class="btn-save">✓</button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>
+        <p>لا توجد طلبات بعد</p>
+      </div>
+      {% endif %}
+    </div>
+
+  </main>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 220" fill="none">
+  <!-- ═══ Ti monogram ═══ -->
+
+  <!-- T — bold charcoal, same weight as the real logo -->
+  <!-- Horizontal bar of T -->
+  <rect x="18" y="20" width="96" height="22" rx="3" fill="#2C3A4A"/>
+  <!-- Vertical stem of T -->
+  <rect x="47" y="20" width="28" height="100" rx="3" fill="#2C3A4A"/>
+
+  <!-- i — smaller, sits to lower-right of T -->
+  <!-- Blue square tittle (dot above i) -->
+  <rect x="104" y="20" width="20" height="20" rx="3" fill="#1E9FE0"/>
+  <!-- Stem of i -->
+  <rect x="108" y="50" width="13" height="70" rx="3" fill="#2C3A4A"/>
+
+  <!-- ═══ Wordmark ═══ -->
+  <text
+    x="100"
+    y="158"
+    font-family="'Poppins', 'Montserrat', Arial, sans-serif"
+    font-weight="800"
+    font-size="30"
+    fill="#2C3A4A"
+    text-anchor="middle"
+    letter-spacing="1"
+  >TADJ -INFO</text>
+
+  <!-- Tagline -->
+  <text
+    x="100"
+    y="180"
+    font-family="'Poppins', Arial, sans-serif"
+    font-weight="400"
+    font-size="8.5"
+    fill="#6B7C93"
+    text-anchor="middle"
+    letter-spacing="1.5"
+  >RÉPARATION INFORMATIQUE IMPRIMANTE</text>
+</svg>

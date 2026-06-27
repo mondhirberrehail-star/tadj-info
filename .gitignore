@@ -1,0 +1,40 @@
+# البيئة الافتراضية — Environnement virtuel
+venv/
+.venv/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# قاعدة البيانات — Base de données (لا ترفعها للـ git)
+*.db
+*.sqlite
+*.sqlite3
+
+# Flask
+instance/
+.webassets-cache
+
+# متغيرات البيئة السرية — Variables secrètes
+.env
+.env.*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# Render
+.render/

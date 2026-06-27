@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: tadj-info
+    runtime: python
+    plan: free                          # الخطة المجانية — Free tier
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 2 --timeout 60
+    healthCheckPath: /
+
+    # متغيرات البيئة — Variables d'environnement
+    envVars:
+      - key: FLASK_DEBUG
+        value: "0"
+      - key: SECRET_KEY
+        generateValue: true             # Render يولّد قيمة عشوائية آمنة تلقائياً
+      - key: ADMIN_PASSWORD
+        sync: false                     # تُدخلها يدوياً في لوحة Render (لا تُحفظ في الكود)
+      - key: DATABASE_PATH
+        value: /data/tadj_info.db      # مسار القرص الدائم
+
+    # القرص الدائم — Persistent Disk (لحفظ SQLite)
+    disk:
+      name: tadj-info-db
+      mountPath: /data                 # المسار داخل السيرفر
+      sizeGB: 1                        # 1 جيجا يكفي لـ SQLite
