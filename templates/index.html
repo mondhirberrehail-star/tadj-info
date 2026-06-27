@@ -379,20 +379,26 @@
 
       </div>
 
-      <!-- خريطة — Carte -->
+      <!-- خريطة — Carte Google Maps -->
       <div class="contact__map">
-        <div class="map-placeholder" aria-label="موقع المتجر على الخريطة">
-          <div class="map-placeholder__inner">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
-            </svg>
-            <p data-ar="تاجنانت، ميلة، الجزائر" data-fr="Tadjenanet, Mila, Algérie">تاجنانت، ميلة، الجزائر</p>
-            <a href="https://maps.google.com/?q=تاجنانت+ميلة+الجزائر" target="_blank" rel="noopener"
-               class="btn btn--outline" data-ar="فتح في الخريطة" data-fr="Ouvrir dans Maps">
-              فتح في الخريطة
-            </a>
-          </div>
+        <div class="map-embed" aria-label="موقع المتجر على الخريطة">
+          <iframe
+            class="map-embed__iframe"
+            src="https://maps.google.com/maps?q=36.1147781,5.981747&z=17&output=embed"
+            title="موقع TADJ-INFO — Tadjenanet, Mila"
+            loading="lazy"
+            referrerpolicy="no-referrer-when-downgrade"
+            allowfullscreen>
+          </iframe>
         </div>
+        <a href="https://www.google.com/maps/dir/?api=1&destination=36.1147781,5.981747"
+           class="btn btn--primary map-directions"
+           target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <polygon points="3 11 22 2 13 21 11 13 3 11"/>
+          </svg>
+          <span data-ar="احصل على الاتجاهات" data-fr="Obtenir l'itinéraire">احصل على الاتجاهات</span>
+        </a>
       </div>
     </div>
   </div>
