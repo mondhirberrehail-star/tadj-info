@@ -16,6 +16,11 @@ function applyLang(lang) {
   html.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
   localStorage.setItem('tadj_lang', lang);
 
+  // Swap aria-label on elements with data-ar-label / data-fr-label
+  document.querySelectorAll('[data-ar-label][data-fr-label]').forEach(el => {
+    el.setAttribute('aria-label', lang === 'ar' ? el.dataset.arLabel : el.dataset.frLabel);
+  });
+
   // Swap all [data-ar] / [data-fr] text content
   document.querySelectorAll('[data-ar][data-fr]').forEach(el => {
     const txt = lang === 'ar' ? el.dataset.ar : el.dataset.fr;
