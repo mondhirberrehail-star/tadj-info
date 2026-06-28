@@ -1,7 +1,7 @@
 /**
- * products.js — fetch products from Google Sheets CSV and render cards
- * CSV columns: name, category, price, image_url, image_url2, image_url3, available
- * Only rows where available === "yes" are shown.
+ * products.js — bilingual product cards from Google Sheets CSV
+ * CSV columns: name_fr, name_ar, category_fr, category_ar,
+ *              price, image_url, image_url2, image_url3, available
  */
 
 const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTGTx5O-3s4k4UkY68v1KDvVknkKnf0wLlUJmVUdzUoSDdW0zh-64jJ_t2ndOoV-23ilPJDarWJyaU0/pub?gid=0&single=true&output=csv";
@@ -12,7 +12,7 @@ const gridEl    = document.getElementById("products-grid");
 const loadingEl = document.getElementById("products-loading");
 const errorEl   = document.getElementById("products-error");
 
-/* ── CSV parser (RFC-4180, handles quoted multi-line fields) ── */
+/* ── RFC-4180 CSV parser (handles quoted multi-line fields) ── */
 function parseCSV(text) {
   const rows = [];
   let cur = "", inQ = false, fields = [], i = 0;
@@ -35,28 +35,44 @@ function parseCSV(text) {
     i++;
   }
   push(); if (fields.length) rows.push(fields);
-  const headers = rows[0].map(h => h.trim().toLowerCase());
+  const headers = rows[0].map(h => h.trim().toLowerCase().replace(/\s+/g, "_"));
   return rows.slice(1)
     .filter(r => r.some(f => f.trim()))
     .map(r => Object.fromEntries(headers.map((h, j) => [h, (r[j] ?? "").trim()])));
 }
 
-/* ── Extract direct image URL from BBCode or plain URL ── */
+/* ── Extract direct URL from BBCode [img]url[/img] ── */
 function extractUrl(raw) {
   if (!raw) return "";
   const m = raw.match(/\[img\](https?:\/\/[^\[]+)\[\/img\]/i);
   return (m ? m[1] : raw).trim();
 }
 
-/* ── Collect valid image URLs from a product row ── */
+/* ── Collect valid image URLs (up to 3 columns) ── */
 function getImages(p) {
   return ["image_url", "image_url2", "image_url3"]
     .map(k => extractUrl(p[k]))
     .filter(u => u !== "");
 }
 
-/* ── WhatsApp link ── */
-function buildWhatsApp(name) {
+/* ── Current lang from <html data-lang="..."> ── */
+function getLang() {
+  return document.documentElement.getAttribute("data-lang") || "ar";
+}
+
+/* ── Pick the right value with fallback ── */
+function pick(p, field) {
+  const lang = getLang();
+  // Try lang-specific column first, then the other lang, then a shared column
+  const primary  = (p[`${field}_${lang}`] || "").trim();
+  const fallback = (p[`${field}_${lang === "fr" ? "ar" : "fr"}`] || "").trim();
+  const shared   = (p[field] || "").trim(); // e.g. "category" without suffix
+  return primary || fallback || shared;
+}
+
+/* ── WhatsApp link using currently displayed name ── */
+function buildWhatsApp(p) {
+  const name = pick(p, "name");
   const msg = encodeURIComponent(`السلام عليكم، نحب نطلب: ${name}`);
   return `https://wa.me/${WA_NUMBER}?text=${msg}`;
 }
@@ -73,13 +89,15 @@ function categoryIcon(cat) {
   return icons[cat] || icons.accessories;
 }
 
-/* ── Build image carousel or single image or icon ── */
+/* ── Image carousel or single image or icon ── */
 function buildMedia(p, images) {
+  const cat = pick(p, "category");
+
   if (images.length === 0) {
     const div = document.createElement("div");
     div.className = "product-card__icon";
     div.setAttribute("aria-hidden", "true");
-    div.innerHTML = categoryIcon(p.category);
+    div.innerHTML = categoryIcon(cat);
     return div;
   }
 
@@ -88,12 +106,12 @@ function buildMedia(p, images) {
     wrap.className = "product-card__img";
     const img = document.createElement("img");
     img.src = images[0];
-    img.alt = p.name;
+    img.alt = pick(p, "name");
     img.loading = "lazy";
     img.addEventListener("error", () => {
       wrap.className = "product-card__icon";
       wrap.setAttribute("aria-hidden", "true");
-      wrap.innerHTML = categoryIcon(p.category);
+      wrap.innerHTML = categoryIcon(cat);
     });
     wrap.appendChild(img);
     return wrap;
@@ -102,29 +120,23 @@ function buildMedia(p, images) {
   // Multiple images → carousel
   const carousel = document.createElement("div");
   carousel.className = "product-card__carousel";
-
   const track = document.createElement("div");
   track.className = "carousel__track";
-
   let current = 0;
-  const validImages = [];
 
   images.forEach((url, idx) => {
     const slide = document.createElement("div");
     slide.className = "carousel__slide" + (idx === 0 ? " carousel__slide--active" : "");
     const img = document.createElement("img");
     img.src = url;
-    img.alt = `${p.name} ${idx + 1}`;
+    img.alt = `${pick(p, "name")} ${idx + 1}`;
     img.loading = idx === 0 ? "eager" : "lazy";
     img.addEventListener("error", () => slide.remove());
     slide.appendChild(img);
     track.appendChild(slide);
-    validImages.push(slide);
   });
-
   carousel.appendChild(track);
 
-  // Prev / Next arrows
   const prev = document.createElement("button");
   prev.className = "carousel__btn carousel__btn--prev";
   prev.setAttribute("aria-label", "السابق");
@@ -135,7 +147,6 @@ function buildMedia(p, images) {
   next.setAttribute("aria-label", "التالي");
   next.innerHTML = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>`;
 
-  // Dot indicators
   const dots = document.createElement("div");
   dots.className = "carousel__dots";
   images.forEach((_, idx) => {
@@ -156,19 +167,16 @@ function buildMedia(p, images) {
   prev.addEventListener("click", e => { e.stopPropagation(); goTo(current - 1); });
   next.addEventListener("click", e => { e.stopPropagation(); goTo(current + 1); });
 
-  carousel.appendChild(prev);
-  carousel.appendChild(next);
-  carousel.appendChild(dots);
-
-  // Touch/swipe support
   let touchStartX = 0;
   carousel.addEventListener("touchstart", e => { touchStartX = e.touches[0].clientX; }, { passive: true });
   carousel.addEventListener("touchend", e => {
     const dx = e.changedTouches[0].clientX - touchStartX;
-    // RTL: swipe right = next, swipe left = prev (reverse of LTR)
     if (Math.abs(dx) > 40) goTo(dx < 0 ? current + 1 : current - 1);
   }, { passive: true });
 
+  carousel.appendChild(prev);
+  carousel.appendChild(next);
+  carousel.appendChild(dots);
   return carousel;
 }
 
@@ -178,19 +186,30 @@ function renderCard(p) {
   const priceNum = p.price ? parseFloat(p.price.replace(/[^\d.]/g, "")) : NaN;
   const priceText = !isNaN(priceNum)
     ? `<p class="product-card__price">${priceNum.toLocaleString("fr-DZ")} دج</p>`
-    : `<p class="product-card__price product-card__price--quote">حسب التشخيص</p>`;
+    : `<p class="product-card__price product-card__price--quote" data-ar="حسب التشخيص" data-fr="Sur devis">حسب التشخيص</p>`;
+
+  // Stable filter key = shared category column (or fr if bilingual)
+  const catKey  = (p.category_fr || p.category || "").trim();
+  const catAr   = (p.category_ar || p.category || catKey).trim();
+  const catFr   = catKey;
+  const nameFr  = (p.name_fr || p.name_ar || "").trim();
+  const nameAr  = (p.name_ar || p.name_fr || "").trim();
+
+  const lang = getLang();
+  const displayName = lang === "fr" ? (nameFr || nameAr) : (nameAr || nameFr);
+  const displayCat  = lang === "fr" ? (catFr  || catAr)  : (catAr  || catFr);
 
   const card = document.createElement("div");
   card.className = "product-card aos-visible";
-  card.dataset.category = p.category || "";
+  card.dataset.category = catKey;
 
   card.innerHTML = `
-    <span class="product-card__badge product-card__badge--${p.category}">${p.category}</span>
+    <span class="product-card__badge" data-ar="${catAr}" data-fr="${catFr}">${displayCat}</span>
     <div class="product-card__body">
-      <h3 class="product-card__name">${p.name}</h3>
+      <h3 class="product-card__name" data-ar="${nameAr}" data-fr="${nameFr}">${displayName}</h3>
       ${priceText}
     </div>
-    <a href="${buildWhatsApp(p.name)}" class="product-card__order" target="_blank" rel="noopener">
+    <a href="${buildWhatsApp(p)}" class="product-card__order" target="_blank" rel="noopener" data-name-fr="${nameFr}" data-name-ar="${nameAr}">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true" style="vertical-align:-3px;margin-inline-end:6px"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
       اطلب الآن
     </a>`;
@@ -199,22 +218,46 @@ function renderCard(p) {
   return card;
 }
 
+/* ── Update WhatsApp links when language changes ── */
+function updateWaLinks(lang) {
+  gridEl.querySelectorAll(".product-card__order").forEach(a => {
+    const name = lang === "fr" ? a.dataset.nameFr : a.dataset.nameAr;
+    if (name) {
+      const msg = encodeURIComponent(`السلام عليكم، نحب نطلب: ${name}`);
+      a.href = `https://wa.me/${WA_NUMBER}?text=${msg}`;
+    }
+  });
+}
+
 /* ── Build category filter tabs ── */
-function buildFilters(categories) {
+function buildFilters(products) {
   filtersEl.innerHTML = "";
+
+  // Collect unique categories: stable key (fr or shared) → ar label
+  const seen = new Map();
+  products.forEach(p => {
+    const key = (p.category_fr || p.category || "").trim();
+    const ar  = (p.category_ar || p.category || key).trim();
+    if (key && !seen.has(key)) seen.set(key, ar);
+  });
+
+  const lang = getLang();
+
   const allBtn = document.createElement("button");
   allBtn.className = "filter-btn filter-btn--active";
   allBtn.dataset.category = "all";
   allBtn.setAttribute("data-ar", "الكل");
   allBtn.setAttribute("data-fr", "Tout");
-  allBtn.textContent = document.documentElement.lang === "fr" ? "Tout" : "الكل";
+  allBtn.textContent = lang === "fr" ? "Tout" : "الكل";
   filtersEl.appendChild(allBtn);
 
-  categories.forEach(cat => {
+  seen.forEach((arLabel, frKey) => {
     const btn = document.createElement("button");
     btn.className = "filter-btn";
-    btn.dataset.category = cat;
-    btn.textContent = cat;
+    btn.dataset.category = frKey;
+    btn.setAttribute("data-ar", arLabel);
+    btn.setAttribute("data-fr", frKey);
+    btn.textContent = lang === "fr" ? frKey : arLabel;
     filtersEl.appendChild(btn);
   });
 
@@ -235,12 +278,28 @@ async function loadProducts() {
   try {
     const res = await fetch(CSV_URL);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const rows = parseCSV(await res.text()).filter(r => r.available?.toLowerCase() === "yes");
-    const categories = [...new Set(rows.map(r => r.category).filter(Boolean))];
-    buildFilters(categories);
+    const rows = parseCSV(await res.text()).filter(r =>
+      r.available?.toLowerCase() === "yes" &&
+      (r.name_fr || r.name_ar || r.name || "").trim() !== ""
+    );
+
+    buildFilters(rows);
     rows.forEach(p => gridEl.appendChild(renderCard(p)));
+
     loadingEl.hidden = true;
     gridEl.hidden = false;
+
+    // Hook into the language toggle to update WA links live
+    // main.js fires applyLang() which sets data-lang on <html> and updates [data-ar][data-fr]
+    // We observe that attribute change to update WA links
+    new MutationObserver(mutations => {
+      mutations.forEach(m => {
+        if (m.attributeName === "data-lang") {
+          updateWaLinks(document.documentElement.getAttribute("data-lang") || "ar");
+        }
+      });
+    }).observe(document.documentElement, { attributes: true });
+
   } catch (err) {
     console.error("products.js:", err);
     loadingEl.hidden = true;
