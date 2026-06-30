@@ -4,6 +4,12 @@
 
 'use strict';
 
+/* ── Theme toggle (dark / light) ────────────────────────────── */
+(function () {
+  const saved = localStorage.getItem('tadj_theme') || 'dark';
+  if (saved === 'light') document.documentElement.setAttribute('data-theme', 'light');
+})();
+
 /* ── Language toggle ────────────────────────────────────────── */
 const html = document.documentElement;
 const langToggle = document.getElementById('lang-toggle');
@@ -238,6 +244,22 @@ document.querySelectorAll('[data-aos]').forEach((el, i) => {
   el.style.transitionDelay = `${i % 6 * 80}ms`;
   aosObserver.observe(el);
 });
+
+
+/* ── Theme toggle click handler ─────────────────────────────── */
+const themeToggleBtn = document.getElementById('theme-toggle');
+if (themeToggleBtn) {
+  themeToggleBtn.addEventListener('click', () => {
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    if (isLight) {
+      document.documentElement.removeAttribute('data-theme');
+      localStorage.setItem('tadj_theme', 'dark');
+    } else {
+      document.documentElement.setAttribute('data-theme', 'light');
+      localStorage.setItem('tadj_theme', 'light');
+    }
+  });
+}
 
 
 /* ── WhatsApp FAB two-option menu ───────────────────────────── */

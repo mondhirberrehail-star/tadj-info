@@ -606,17 +606,21 @@ button, input, select, textarea { font-family: inherit; }
 .product-card__price--quote { color: var(--text-muted); font-style: italic; font-size: .85rem; font-weight: 500; }
 
 .product-card__order {
-  display: block;
-  text-align: center;
-  padding: 0.65rem;
-  background: rgba(11,77,162,.15);
-  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.7rem;
+  background: #25D366;
+  color: #fff;
   text-decoration: none;
   font-weight: 700; font-size: 0.85rem;
-  border-top: 1px solid var(--border);
-  transition: background var(--transition);
+  transition: background var(--transition), box-shadow var(--transition), transform var(--transition);
 }
-.product-card__order:hover { background: rgba(30,159,224,.2); }
+.product-card__order:hover {
+  background: #1da851;
+  box-shadow: 0 4px 16px rgba(37,211,102,.45);
+  transform: translateY(-1px);
+}
 
 /* ══════════════════════════════════════════════════════════════
    ORDER / WHATSAPP CTA SECTION
@@ -996,3 +1000,108 @@ html[data-lang="fr"] .form-select-wrap::after { right: 1rem; left: auto; }
 /* Arabic default — hide fr spans */
 html[data-lang="ar"] .lang-fr { display: none !important; }
 html[data-lang="ar"] .lang-ar { display: inline !important; }
+
+/* ══════════════════════════════════════════════════════════════
+   THEME TOGGLE BUTTON
+══════════════════════════════════════════════════════════════ */
+.theme-toggle {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  border-radius: 20px;
+  padding: 0.3rem 0.6rem;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex; align-items: center;
+  transition: border-color var(--transition), color var(--transition);
+}
+.theme-toggle:hover { border-color: var(--accent); color: var(--accent); }
+/* Dark mode: show moon, hide sun */
+.theme-toggle__sun  { display: none; }
+.theme-toggle__moon { display: inline; }
+/* Light mode: show sun, hide moon */
+html[data-theme="light"] .theme-toggle__sun  { display: inline; }
+html[data-theme="light"] .theme-toggle__moon { display: none; }
+
+/* ══════════════════════════════════════════════════════════════
+   LIGHT THEME — variable overrides + element fixes
+══════════════════════════════════════════════════════════════ */
+html[data-theme="light"] {
+  --text-primary: #1a2233;
+  --text-muted:   #5a6980;
+  --bg-dark:      #eef2f7;
+  --bg-card:      #ffffff;
+  --bg-card2:     #f4f7fb;
+  --border:       rgba(0,0,0,.10);
+  --shadow-sm:    0 2px 8px rgba(0,0,0,.07);
+  --shadow-md:    0 4px 20px rgba(0,0,0,.12);
+  --shadow-xl:    0 12px 40px rgba(0,0,0,.15);
+}
+
+/* Navbar */
+html[data-theme="light"] .navbar {
+  background: rgba(255,255,255,.88);
+  border-bottom-color: rgba(0,0,0,.08);
+}
+html[data-theme="light"] .navbar.scrolled {
+  background: rgba(255,255,255,.97);
+  box-shadow: 0 4px 20px rgba(0,0,0,.10);
+}
+@media (max-width: 768px) {
+  html[data-theme="light"] .navbar__links {
+    background: rgba(255,255,255,.98);
+    border-bottom-color: rgba(0,0,0,.08);
+  }
+}
+
+/* Hero — keep dark regardless of theme */
+html[data-theme="light"] .hero { color: #e8edf5; }
+html[data-theme="light"] .hero__bg {
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 0%,  rgba(11,77,162,.45) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 40% at 80% 80%,  rgba(30,159,224,.18) 0%, transparent 60%),
+    #0d1117;
+}
+
+/* Service card icons */
+html[data-theme="light"] .service-card__icon--blue { background: rgba(11,77,162,.12); }
+html[data-theme="light"] .service-card__icon--cyan { background: rgba(30,159,224,.10); }
+
+/* Product carousel overlay buttons */
+html[data-theme="light"] .carousel__btn {
+  background: rgba(255,255,255,.82);
+  color: #1a2233;
+}
+html[data-theme="light"] .carousel__dot { background: rgba(0,0,0,.25); }
+
+/* Product card icon placeholder */
+html[data-theme="light"] .product-card__icon {
+  background: linear-gradient(135deg, rgba(11,77,162,.07), rgba(30,159,224,.05));
+}
+
+/* Category badge tints */
+html[data-theme="light"] .product-card__badge--computers   { background: rgba(11,77,162,.12); }
+html[data-theme="light"] .product-card__badge--printers    { background: rgba(30,159,224,.12); }
+html[data-theme="light"] .product-card__badge--ink         { background: rgba(139,92,246,.12); }
+html[data-theme="light"] .product-card__badge--accessories { background: rgba(245,158,11,.12); }
+html[data-theme="light"] .product-card__badge--repair      { background: rgba(239,68,68,.12); }
+
+/* Contact icons */
+html[data-theme="light"] .contact-item__icon { background: rgba(11,77,162,.12); }
+html[data-theme="light"] .contact-item__icon--whatsapp { background: rgba(37,211,102,.12); }
+
+/* FAB popup menu */
+html[data-theme="light"] .wa-fab-menu__item {
+  background: #ffffff;
+  color: #1a2233;
+  box-shadow: 0 2px 14px rgba(0,0,0,.15);
+}
+
+/* Smooth theme transition on key surfaces */
+body, .navbar, .product-card, .service-card, .whatsapp-cta__card,
+.contact-item__icon, .filter-btn, .section__badge {
+  transition-property: background, background-color, color, border-color, box-shadow;
+  transition-duration: 0.25s;
+  transition-timing-function: ease;
+}
