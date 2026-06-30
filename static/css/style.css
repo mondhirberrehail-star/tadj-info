@@ -491,9 +491,9 @@ button, input, select, textarea { font-family: inherit; }
 /* ── Image carousel ────────────────────────────────────────── */
 .product-card__carousel {
   position: relative;
-  height: 160px;
+  aspect-ratio: 4 / 3;   /* scales proportionally on all screen widths */
   overflow: hidden;
-  background: var(--bg-card2);
+  background: #f5f6f8;   /* neutral light bg for contain letterbox */
 }
 .carousel__track { width: 100%; height: 100%; }
 .carousel__slide {
@@ -503,10 +503,10 @@ button, input, select, textarea { font-family: inherit; }
 .carousel__slide--active { display: block; }
 .carousel__slide img {
   width: 100%; height: 100%;
-  object-fit: cover;
+  object-fit: contain;   /* full product visible, no cropping */
   transition: transform 0.3s ease;
 }
-.product-card:hover .carousel__slide--active img { transform: scale(1.04); }
+.product-card:hover .carousel__slide--active img { transform: scale(1.03); }
 
 .carousel__btn {
   position: absolute; top: 50%; transform: translateY(-50%);
@@ -565,16 +565,16 @@ button, input, select, textarea { font-family: inherit; }
 
 /* Product image */
 .product-card__img {
-  height: 160px;
+  aspect-ratio: 4 / 3;   /* proportional at every width, no fixed height */
   overflow: hidden;
-  background: var(--bg-card2);
+  background: #f5f6f8;   /* neutral light bg for contain letterbox */
 }
 .product-card__img img {
   width: 100%; height: 100%;
-  object-fit: cover;
+  object-fit: contain;   /* full product visible, no cropping */
   transition: transform 0.3s ease;
 }
-.product-card:hover .product-card__img img { transform: scale(1.04); }
+.product-card:hover .product-card__img img { transform: scale(1.03); }
 
 .product-card__badge {
   position: absolute; top: 0.75rem; right: 0.75rem;
