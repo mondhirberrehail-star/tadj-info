@@ -7,7 +7,7 @@
  */
 
 const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTGTx5O-3s4k4UkY68v1KDvVknkKnf0wLlUJmVUdzUoSDdW0zh-64jJ_t2ndOoV-23ilPJDarWJyaU0/pub?gid=0&single=true&output=csv";
-const WA_NUMBER = "213550249981";
+const WA_NUMBER = "213657222512"; // purchases
 
 const filtersEl = document.getElementById("products-filters");
 const gridEl    = document.getElementById("products-grid");

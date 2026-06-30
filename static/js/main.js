@@ -240,6 +240,25 @@ document.querySelectorAll('[data-aos]').forEach((el, i) => {
 });
 
 
+/* ── WhatsApp FAB two-option menu ───────────────────────────── */
+const wafabBtn  = document.getElementById('wa-fab-btn');
+const wafabMenu = document.getElementById('wa-fab-menu');
+
+if (wafabBtn && wafabMenu) {
+  wafabBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    const open = wafabMenu.hidden;
+    wafabMenu.hidden = !open;
+    wafabBtn.setAttribute('aria-expanded', open);
+  });
+  document.addEventListener('click', () => {
+    wafabMenu.hidden = true;
+    wafabBtn.setAttribute('aria-expanded', 'false');
+  });
+  wafabMenu.addEventListener('click', e => e.stopPropagation());
+}
+
+
 /* ── PWA Service Worker registration ────────────────────────── */
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
